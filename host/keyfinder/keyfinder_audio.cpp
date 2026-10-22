@@ -7,10 +7,19 @@
 #include <cstring>
 #include <iostream>
 #include <vector>
+#include <cstdio>
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#endif
 #ifndef KEYFINDER_LIBRARY_VERSION
 #define KEYFINDER_LIBRARY_VERSION "unknown"
 #endif
 int main(int argc, char** argv) {
+#ifdef _WIN32
+  _setmode(_fileno(stdin), _O_BINARY);
+  _setmode(_fileno(stdout), _O_BINARY);
+#endif
   if (argc == 2 && std::strcmp(argv[1], "--version") == 0) {
     std::cout << "libkeyfinder " KEYFINDER_LIBRARY_VERSION << '\n'; return 0;
   }
