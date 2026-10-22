@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube 音频下载",
-  "version": "0.3.0",
-  "description": "下载 MP3，以 libkeyfinder 分析整首音频调性并自动写入文件名。",
+  "version": "0.4.0",
+  "description": "下载 MP3，自动把调性与 BPM 写入文件名。work by orcaz",
   "permissions": [
     "nativeMessaging",
     "storage",
