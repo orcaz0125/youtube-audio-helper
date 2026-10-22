@@ -1,11 +1,12 @@
 """Full-track key detection with libkeyfinder; librosa is used only for BPM."""
 import re,subprocess
+from process_utils import spawn_options
 from keyfinder_backend import analyze_key
 
 def estimate_bpm(path,ffmpeg,progress):
     import librosa
     import numpy as np
-    info=subprocess.run([ffmpeg,'-hide_banner','-i',str(path)],capture_output=True,timeout=30).stderr.decode(errors='replace')
+    info=subprocess.run([ffmpeg,'-hide_banner','-i',str(path)],capture_output=True,timeout=30,**spawn_options()).stderr.decode(errors='replace')
     match=re.search(r'Duration: (\d+):(\d+):(\d+(?:\.\d+)?)',info)
     if not match:return None
     h,m,s=map(float,match.groups());duration=h*3600+m*60+s
@@ -15,7 +16,7 @@ def estimate_bpm(path,ffmpeg,progress):
     tempos=[]
     for number,start in enumerate(starts):
         progress(f'正在识别 BPM · {number+1}/{len(starts)} 段')
-        decoded=subprocess.run([ffmpeg,'-nostdin','-hide_banner','-loglevel','error','-ss',str(start),'-i',str(path),'-t',str(window),'-vn','-ac','1','-ar','22050','-f','f32le','pipe:1'],capture_output=True,timeout=120)
+        decoded=subprocess.run([ffmpeg,'-nostdin','-hide_banner','-loglevel','error','-ss',str(start),'-i',str(path),'-t',str(window),'-vn','-ac','1','-ar','22050','-f','f32le','pipe:1'],capture_output=True,timeout=120,**spawn_options())
         if decoded.returncode:continue
         y=np.frombuffer(decoded.stdout,dtype='<f4').copy()
         if len(y)<22050*4 or np.max(np.abs(y))<1e-5:continue

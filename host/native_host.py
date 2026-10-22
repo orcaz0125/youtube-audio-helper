@@ -2,8 +2,10 @@
 import json, os, re, shutil, struct, subprocess, sys, time, uuid, math
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+from platform_config import default_downloads,reveal_audio
+from process_utils import spawn_options,find_node
 BASE = Path(__file__).resolve().parent.parent
-DOWNLOADS = Path(os.environ.get('YOUTUBE_AUDIO_DOWNLOADS',str(BASE / 'downloads'))).expanduser()
+DOWNLOADS = Path(os.environ.get('YOUTUBE_AUDIO_DOWNLOADS',str(default_downloads()))).expanduser()
 
 def send(data):
     raw=json.dumps(data,ensure_ascii=False).encode('utf-8')
@@ -47,7 +49,7 @@ def download(message):
             total=info.get('total_bytes') or info.get('total_bytes_estimate')
             pct=min(100,round(info.get('downloaded_bytes',0)*100/total)) if total else None
             send({'status':'working','message':f'正在下载音频{f" · {pct}%" if pct is not None else "…"}','progress':pct})
-    node=shutil.which('node') or next((p for p in ('/usr/local/bin/node','/opt/homebrew/bin/node') if Path(p).exists()),None)
+    node=find_node()
     options={'format':'bestaudio[ext=m4a]/bestaudio','noplaylist':True,'outtmpl':str(temp/'audio.%(ext)s'),'quiet':True,'no_warnings':True,'logger':QuietLogger(),'progress_hooks':[progress],'socket_timeout':30,'retries':3,'windowsfilenames':True,'max_filesize':1024**3,'match_filter':lambda info,**kw: '暂不支持正在直播的视频' if info.get('is_live') else None}
     if node: options['js_runtimes']={'node':{'path':node}}
     try:
@@ -63,7 +65,7 @@ def download(message):
         if fmt=='mp3':
             import imageio_ffmpeg
             send({'status':'working','message':'音频下载完成，正在转换 MP3…'})
-            result=subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(),'-nostdin','-hide_banner','-loglevel','error','-i',str(source),'-vn','-codec:a','libmp3lame','-q:a','2',str(temp/'output.mp3')],capture_output=True,timeout=1800)
+            result=subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(),'-nostdin','-hide_banner','-loglevel','error','-i',str(source),'-vn','-codec:a','libmp3lame','-q:a','2',str(temp/'output.mp3')],capture_output=True,timeout=1800,**spawn_options())
             if result.returncode: raise ValueError('MP3 转换失败，请重试')
             source=temp/'output.mp3'
         from metadata import read_annotations, merge_analysis
@@ -83,6 +85,10 @@ def download(message):
         shutil.rmtree(temp,ignore_errors=True)
 
 def main():
+    if sys.platform=='win32':
+        import msvcrt
+        msvcrt.setmode(sys.stdin.fileno(),os.O_BINARY)
+        msvcrt.setmode(sys.stdout.fileno(),os.O_BINARY)
     while True:
         try:
             message=receive()
@@ -98,12 +104,12 @@ def main():
                     key_engine=check_available()
                 except Exception as exc:missing.append(str(exc))
                 if missing: send({'status':'error','message':'本机程序依赖不完整：'+'; '.join(missing)})
-                else: send({'status':'ready','version':'0.3.0','key_engine':key_engine,'download_directory':str(DOWNLOADS)})
+                else: send({'status':'ready','version':'0.4.0','platform':sys.platform,'key_engine':key_engine,'download_directory':str(DOWNLOADS)})
             elif message.get('action')=='download': download(message)
             elif message.get('action')=='reveal':
                 path=Path(message.get('path','')).resolve()
                 if not path.is_relative_to(DOWNLOADS.resolve()) or not path.is_file(): raise ValueError('找不到此音频文件')
-                subprocess.run(['/usr/bin/open','-R',str(path)],check=True)
+                reveal_audio(path)
                 send({'status':'done'})
             else: raise ValueError('未知操作')
         except Exception as exc:

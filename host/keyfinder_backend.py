@@ -1,11 +1,14 @@
 """Decode the complete audio track and stream it through actual libkeyfinder."""
-import json, subprocess, tempfile
+import json, subprocess, tempfile, sys
+from process_utils import spawn_options
 from pathlib import Path
-HELPER=Path(__file__).resolve().parent/'bin/keyfinder-audio'
+def helper_path(target=None):
+    return Path(__file__).resolve().parent/('windows-x64/keyfinder-audio.exe' if (target or sys.platform)=='win32' else 'bin/keyfinder-audio')
+HELPER=helper_path()
 
 def check_available():
     if not HELPER.is_file(): raise RuntimeError('libkeyfinder 尚未安装，请重新运行本机安装程序。')
-    result=subprocess.run([str(HELPER),'--version'],capture_output=True,text=True,timeout=10)
+    result=subprocess.run([str(HELPER),'--version'],capture_output=True,text=True,timeout=10,**spawn_options())
     if result.returncode or not result.stdout.startswith('libkeyfinder '):
         raise RuntimeError('libkeyfinder 无法启动，请重新运行本机安装程序。'+result.stderr.strip()[:200])
     return result.stdout.strip()
@@ -15,9 +18,9 @@ def analyze_key(path,ffmpeg,progress=lambda text:None):
     progress('正在用 libkeyfinder 分析整首音频的调性…')
     # Redirect errors to an unnamed temporary stream, never to the user's folder.
     with tempfile.TemporaryFile() as decoder_error:
-        decoder=subprocess.Popen([ffmpeg,'-nostdin','-hide_banner','-loglevel','error','-i',str(path),'-vn','-ac','1','-ar','44100','-f','f32le','pipe:1'],stdout=subprocess.PIPE,stderr=decoder_error)
+        decoder=subprocess.Popen([ffmpeg,'-nostdin','-hide_banner','-loglevel','error','-i',str(path),'-vn','-ac','1','-ar','44100','-f','f32le','pipe:1'],stdout=subprocess.PIPE,stderr=decoder_error,**spawn_options())
         try:
-            with subprocess.Popen([str(HELPER)],stdin=decoder.stdout,stdout=subprocess.PIPE,stderr=subprocess.PIPE) as detector:
+            with subprocess.Popen([str(HELPER)],stdin=decoder.stdout,stdout=subprocess.PIPE,stderr=subprocess.PIPE,**spawn_options()) as detector:
                 decoder.stdout.close()
                 try: output,error=detector.communicate(timeout=1800)
                 except BaseException:
