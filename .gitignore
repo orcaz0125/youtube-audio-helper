@@ -1,0 +1,16 @@
+# Local Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Native adapter is built separately on each machine
+host/bin/
+*.building
+
+# Machine-specific launchers, output and logs
+host/launch.sh
+*.log
+downloads/
+.DS_Store
