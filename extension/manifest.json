@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube 音频下载",
+  "version": "0.3.0",
+  "description": "下载 MP3，以 libkeyfinder 分析整首音频调性并自动写入文件名。",
+  "permissions": [
+    "nativeMessaging",
+    "storage",
+    "activeTab"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYYbK3yug8dbCVkNu6bf5KXSy17tzBApNnIJThrw/m9TZsL1LXnuRqHLGvtWpv4y9wkqe8M5Xq2Y/NzglUbh9bw4bFpBFv5aZWtLiKi7McAbj7jHBL+a/pf+r51M8aAvO7tBQFFDYs/s09jDdak52e1UqsvGZLzRKEXy74aNN4F5vrfmU0/wGManDPe0Kfy7x1S+BS4GmMfowbTztj7+w3/PuxRFL7Qd9UPncob15ncWH3dAWDboE7N0MLtVhdhVJB0B9W06AEk/x5PZhbZvTj6eCjnVMCiKzVSuXd9NYfHlvj7W0Y4L8Fuw1dZCbXGW6cuCQmR6iBDD5dhmSvW9JwIDAQAB"
+}
