@@ -1,0 +1,2 @@
+7fc048cc01eaeaf954341be2975255da36ac10c2308e88775443e5aa7b4f116e  keyfinder-audio.exe
+e99b2e97e4578ff50ce1bf095fa9ab7b285bef46d6b641dfec2d537687a9deee  native-host.exe
